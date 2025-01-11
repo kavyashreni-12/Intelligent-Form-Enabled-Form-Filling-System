@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice-Based Form</title>
+  <head>
+    <!---CSS CODE--->
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  
+<body>
+  <div class="form-container" id="formContainer">
+    <h1>Voice-Based Form</h1>
+    <form id="voiceForm">
+      <label for="name">Name:</label>
+      <input type="text" id="name" placeholder="Enter your name">
+      <div class="error" id="nameError">Name is required.</div>
+      <div class="valid" id="nameValid">Name looks good!</div>
+
+      <label for="email">Email:</label>
+      <input type="email" id="email" placeholder="Enter your email">
+      <div class="error" id="emailError">Please enter a valid email address.</div>
+      <div class="valid" id="emailValid">Email looks good!</div>
+
+      <label for="countryCode">Country Code:</label>
+      <select id="countryCode">
+        <option value="+1">United States (+1)</option>
+        <option value="+91">India (+91)</option>
+        <option value="+44">United Kingdom (+44)</option>
+        <option value="+61">Australia (+61)</option>
+        <option value="+81">Japan (+81)</option>
+      </select>
+
+      <label for="phone">Phone:</label>
+      <input type="tel" id="phone" placeholder="Enter your phone number">
+      <div class="error" id="phoneError">Please enter a valid phone number.</div>
+      <div class="valid" id="phoneValid">Phone looks good!</div>
+
+      <button type="button" class="btn btn-record" id="recordBtn">🎤 Start Voice Input</button>
+      <button type="button" class="btn btn-submit" id="submitBtn">Submit</button>
+    </form>
+
+    <div class="buttons-container">
+      <button class="btn btn-toggle" id="toggleBtn">🌙 Dark Mode</button>
+      <button class="btn btn-help" id="helpBtn">❓ Help</button>
+      <button class="btn btn-save" id="saveBtn">💾 Save</button>
+      <button class="btn btn-download" id="downloadBtn">📥 Download</button>
+    </div>
+  </div>
+
+<!---JS CODE--->
+  <script src="/static/script.js"></script>
+  
+</body>
+</html>
