@@ -8,8 +8,8 @@ app = Flask(__name__)
 db = mysql.connector.connect(
     host="localhost",
     user="root",  # Replace with your MySQL username
-    password="Iamvaishu@12#",  # Replace with your MySQL password
-    database="voiceform"  # Replace with your database name
+    password="...",  # Replace with your MySQL password
+    database="..."  # Replace with your database name
 )
 
 cursor = db.cursor()
