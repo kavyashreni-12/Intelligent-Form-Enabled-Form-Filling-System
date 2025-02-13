@@ -148,10 +148,10 @@ function validateField(field, value) {
   }
 
   if (field === "phone") {
-    if (value.length !== 10) {
+    if (!/^[789]\d{9}$/.test(value)) {
       phoneError.style.display = "block";
       phoneValid.style.display = "none";
-      speak("Please enter a valid 10-digit phone number");
+      speak("Phone number must start with 7, 8, or 9 and be exactly 10 digits.");
       return false;
     }
     phoneError.style.display = "none";
