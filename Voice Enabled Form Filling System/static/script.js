@@ -16,191 +16,151 @@ const emailValid = document.getElementById("emailValid");
 const phoneError = document.getElementById("phoneError");
 const phoneValid = document.getElementById("phoneValid");
 
-let step = 0; // Control the form fields
+let step = 0;
 let isListening = false;
-let timeoutId = null;
-let isFormCompleted = false; // Track if the form is completed
+let isFormCompleted = false;
 
-// Initialize Speech Recognition (with polyfill for webkitSpeechRecognition support)
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 recognition.lang = "en-US";
 recognition.interimResults = false;
+recognition.continuous = true; // Keeps recognition active
+recognition.maxAlternatives = 1;
 
-// Initialize Speech Synthesis (Text-to-Speech)
 const synth = window.speechSynthesis;
 
-// Function to capitalize the first letter of input
-function capitalizeFirstLetter(text) {
-  return text.charAt(0).toUpperCase() + text.slice(1).replace(/\.$/, ""); // Capitalize & remove period
+// Function to speak with delay
+function speak(text, delay = 2000) {
+  setTimeout(() => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8;
+    synth.speak(utterance);
+  }, delay);
 }
 
-// Function to speak text
-function speak(text) {
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.8; // Slower pace for better understanding
-  synth.speak(utterance);
+// Function to remove full stops from voice input
+function cleanVoiceInput(text) {
+  return text.replace(/\.$/, ""); // Removes period at the end
 }
 
-// Start voice recognition on button click
+// Start/stop voice recognition
 recordBtn.addEventListener("click", () => {
   if (isListening) {
     recognition.stop();
     recordBtn.textContent = "🎤 Start Voice Input";
     isListening = false;
   } else {
+    isListening = true;
     recognition.start();
     recordBtn.textContent = "⏹ Stop Voice Input";
-    isListening = true;
-    step = 0; // Start from the first field
-    isFormCompleted = false; // Reset form completion flag
+    step = 0;
+    isFormCompleted = false;
     speakAndHighlightNextField();
   }
 });
 
-// Process speech input for filling the form
+// Speech recognition result handling
 recognition.onresult = (event) => {
-  let transcript = event.results[0][0].transcript.trim();
-  transcript = capitalizeFirstLetter(transcript); // Capitalize and remove full stops
-
-  clearTimeout(timeoutId); // Reset timeout when user provides input
-
-  timeoutId = setTimeout(() => {
-    if (!isFormCompleted) {
-      speak("Please provide the input. You have been idle for a while.");
-      speakAndHighlightNextField();
-    }
-  }, 15000); // 15 seconds timeout
+  let transcript = event.results[event.results.length - 1][0].transcript.trim();
+  transcript = cleanVoiceInput(transcript); // Remove full stop
 
   switch (step) {
     case 0:
       nameInput.value = transcript;
-      validateField("name", transcript);
+      if (validateField("name", transcript)) {
+        speak(`You have entered ${transcript} as your name.`);
+        step++;
+        setTimeout(speakAndHighlightNextField, 4000);
+      }
       break;
     case 1:
       emailInput.value = transcript;
-      validateField("email", transcript);
+      if (validateField("email", transcript)) {
+        speak(`You have entered ${transcript} as your email.`);
+        step++;
+        setTimeout(speakAndHighlightNextField, 4000);
+      }
       break;
     case 2:
       const countryCode = getCountryCodeFromSpeech(transcript);
       if (countryCode) {
         countryCodeSelect.value = countryCode;
-        validateField("countryCode", countryCode);
+        speak(`You have selected ${transcript} as your country.`);
+        step++;
+        setTimeout(speakAndHighlightNextField, 4000);
       } else {
-        speak("Sorry, country not recognized. Please say the name of your country again.");
+        speak("Sorry, country not recognized. Please try again.");
       }
       break;
     case 3:
-      phoneInput.value = transcript.replace(/\D/g, ""); // Remove non-digits
-      validateField("phone", phoneInput.value);
+      phoneInput.value = transcript.replace(/\D/g, ""); // Remove non-numeric characters
+      if (validateField("phone", phoneInput.value)) {
+        speak(`You have entered ${phoneInput.value} as your phone number.`);
+        step++;
+        if (step >= 4) {
+          recognition.stop();
+          isFormCompleted = true;
+          speak("Form is filled. Please review and click Submit.");
+        }
+      }
       break;
   }
-  step++;
-  if (step < 4) {
-    setTimeout(speakAndHighlightNextField, 50000); // Slight delay to prevent overlap
-  } else {
-    recognition.stop();
-    recordBtn.textContent = "🎤 Start Voice Input";
-    isFormCompleted = true; // Form is completed
-    speak("Form is filled. Please review and click Submit.");
-  }
 };
 
+// Handle recognition errors
 recognition.onerror = (event) => {
-  alert(`Error occurred in recognition: ${event.error}`);
+  speak("I didn't catch that. Please try again.");
 };
 
-recognition.onend = () => {
-  // This ensures the form will continue even after recognition ends
-  if (step < 4) {
-    speakAndHighlightNextField();
-  }
-};
-
+// Speak next field prompt & prevent repetition
 function speakAndHighlightNextField() {
-  if (step === 0) {
-    speak("Please enter your name.");
-    nameInput.focus();
-    highlightField("name");
-  } else if (step === 1) {
-    speak("Please enter your email.");
-    emailInput.focus();
-    highlightField("email");
-  } else if (step === 2) {
-    speak("Please select your country code.");
-    countryCodeSelect.focus();
-    highlightField("countryCode");
-  } else if (step === 3) {
-    speak("Please enter your phone number.");
-    phoneInput.focus();
-    highlightField("phone");
-  }
-  recognition.start(); // Reactivate speech recognition for the next field
-}
-
-function highlightField(field) {
-  if (field === "name") {
-    nameInput.classList.add("highlight");
-    emailInput.classList.remove("highlight");
-    phoneInput.classList.remove("highlight");
-    countryCodeSelect.classList.remove("highlight");
-  } else if (field === "email") {
-    emailInput.classList.add("highlight");
-    nameInput.classList.remove("highlight");
-    phoneInput.classList.remove("highlight");
-    countryCodeSelect.classList.remove("highlight");
-  } else if (field === "phone") {
-    phoneInput.classList.add("highlight");
-    nameInput.classList.remove("highlight");
-    emailInput.classList.remove("highlight");
-    countryCodeSelect.classList.remove("highlight");
-  } else if (field === "countryCode") {
-    countryCodeSelect.classList.add("highlight");
-    nameInput.classList.remove("highlight");
-    emailInput.classList.remove("highlight");
-    phoneInput.classList.remove("highlight");
+  const fields = ["name", "email", "countryCode", "phone"];
+  if (step < fields.length) {
+    speak(`Please enter your ${fields[step]}.`, 3000);
+    document.getElementById(fields[step]).focus();
   }
 }
 
+// Validate user input
 function validateField(field, value) {
   if (field === "name") {
-    if (!value.trim()) {
+    if (!/^[A-Za-z ]+$/.test(value)) {
       nameError.style.display = "block";
       nameValid.style.display = "none";
-      speak("Please enter your name again.");
-    } else {
-      nameError.style.display = "none";
-      nameValid.style.display = "block";
+      speak("Name should only contain letters Please Enter your name again");
+      return false;
     }
-  } else if (field === "email") {
+    nameError.style.display = "none";
+    nameValid.style.display = "block";
+    return true;
+  }
+
+  if (field === "email") {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!value.match(emailRegex)) {
+    if (!emailRegex.test(value)) {
       emailError.style.display = "block";
       emailValid.style.display = "none";
-      speak("Please enter a valid email address.");
-    } else {
-      emailError.style.display = "none";
-      emailValid.style.display = "block";
+      speak("Please enter a valid email address Please make sure @ symbol is available");
+      return false;
     }
-  } else if (field === "phone") {
-    const phoneNumber = value;
-    const countryCode = countryCodeSelect.value;
+    emailError.style.display = "none";
+    emailValid.style.display = "block";
+    return true;
+  }
 
-    // Validate phone number based on country code
-    if (countryCode === "+91" && phoneNumber.length !== 10) {
+  if (field === "phone") {
+    if (value.length !== 10) {
       phoneError.style.display = "block";
       phoneValid.style.display = "none";
-      speak("Please enter a 10-digit phone number for India.");
-    } else if (phoneNumber.length < 10) {
-      phoneError.style.display = "block";
-      phoneValid.style.display = "none";
-      speak("Please enter a valid phone number.");
-    } else {
-      phoneError.style.display = "none";
-      phoneValid.style.display = "block";
+      speak("Please enter a valid 10-digit phone number");
+      return false;
     }
+    phoneError.style.display = "none";
+    phoneValid.style.display = "block";
+    return true;
   }
 }
 
+// Convert spoken country name to country code
 function getCountryCodeFromSpeech(transcript) {
   const countryCodeMapping = {
     "united states": "+1",
@@ -216,44 +176,17 @@ function getCountryCodeFromSpeech(transcript) {
 }
 
 // Submit form
-/*submitBtn.addEventListener("click", () => {
-  if (
-    nameInput.value &&
-    emailInput.value &&
-    phoneInput.value &&
-    countryCodeSelect.value
-  ) {
-    alert("Form submitted successfully!");*/
-
-    /*// Reset the form fields
-    document.getElementById("form").reset(); // Assuming the form has an ID 'form'
-
-    // Reset validation messages and highlight
-    nameError.style.display = "none";
-    nameValid.style.display = "none";
-    emailError.style.display = "none";
-    emailValid.style.display = "none";
-    phoneError.style.display = "none";
-    phoneValid.style.display = "none";
-
-    // Reset the country code selection
-    countryCodeSelect.value = "+91"; // Default to India, or set to preferred default
-
-    // Reset form state
-    step = 0;
-    isFormCompleted = false;
-    speak("Form submitted successfully! You can start a new entry.");
-  } else {
-    speak("Please complete all fields before submitting.");
-  }
-});*/
-
 submitBtn.addEventListener("click", async () => {
+  if (!isFormCompleted) {
+    speak("Please complete all fields before submitting.");
+    return;
+  }
+
   const formData = {
-    name: document.getElementById("name").value,
-    email: document.getElementById("email").value,
-    countryCode: document.getElementById("countryCode").value,
-    phone: document.getElementById("phone").value,
+    name: nameInput.value,
+    email: emailInput.value,
+    countryCode: countryCodeSelect.value,
+    phone: phoneInput.value,
   };
 
   const response = await fetch("/submit", {
@@ -264,23 +197,34 @@ submitBtn.addEventListener("click", async () => {
 
   const result = await response.json();
   alert(result.message);
+
+  document.getElementById("form").reset();
+  step = 0;
+  isFormCompleted = false;
+  speak("Form submitted successfully! Next user can start now.");
 });
 
-downloadBtn.addEventListener("click", async () => {
-  const formData = {
-    name: document.getElementById("name").value,
-    email: document.getElementById("email").value,
-    countryCode: document.getElementById("countryCode").value,
-    phone: document.getElementById("phone").value,
-  };
+// Help button
+helpBtn.addEventListener("click", () => {
+  speak("Say 'start' to begin filling the form.");
+  speak("I will guide you through each field.");
+});
 
-  const response = await fetch("/download", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(formData),
+// Save progress
+saveBtn.addEventListener("click", () => {
+  speak("Saving your progress.");
+});
+
+// Download form data
+downloadBtn.addEventListener("click", async () => {
+  const formData = JSON.stringify({
+    name: nameInput.value,
+    email: emailInput.value,
+    countryCode: countryCodeSelect.value,
+    phone: phoneInput.value,
   });
 
-  const blob = await response.blob();
+  const blob = new Blob([formData], { type: "text/plain" });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -290,32 +234,8 @@ downloadBtn.addEventListener("click", async () => {
   a.remove();
 });
 
-
-// Handle toggle functionality
+// Toggle voice input
 toggleBtn.addEventListener("click", () => {
-  if (isListening) {
-    recognition.stop();
-    isListening = false;
-  } else {
-    recognition.start();
-    isListening = true;
-  }
+  isListening ? recognition.stop() : recognition.start();
+  isListening = !isListening;
 });
-
-// Help button for instructions
-helpBtn.addEventListener("click", () => {
-  speak("Say 'start' to begin filling the form.");
-  speak("For each field, I will guide you to provide your input.");
-  speak("You can also manually fill the fields if needed.");
-});
-
-// Save button to save progress
-saveBtn.addEventListener("click", () => {
-  speak("Saving your progress.");
-});
-
-// Download button for form data
-downloadBtn.addEventListener("click", () => {
-  speak("Downloading the form data.");
-});
-
