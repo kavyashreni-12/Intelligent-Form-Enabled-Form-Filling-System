@@ -151,7 +151,7 @@ function validateField(field, value) {
     if (!/^[789]\d{9}$/.test(value)) {
       phoneError.style.display = "block";
       phoneValid.style.display = "none";
-      speak("Phone number must start with 7, 8, or 9 and be exactly 10 digits.");
+      speak("Phone number must start with 7, 8, or 9 and be exactly 10 digits Please Enter your phone number again");
       return false;
     }
     phoneError.style.display = "none";
@@ -174,6 +174,11 @@ function getCountryCodeFromSpeech(transcript) {
   };
   return countryCodeMapping[transcript.toLowerCase()] || null;
 }
+
+//............................//
+nameInput.addEventListener("blur", () => validateField("name", nameInput.value));
+emailInput.addEventListener("blur", () => validateField("email", emailInput.value));
+phoneInput.addEventListener("blur", () => validateField("phone", phoneInput.value));
 
 // Submit form
 submitBtn.addEventListener("click", async () => {
