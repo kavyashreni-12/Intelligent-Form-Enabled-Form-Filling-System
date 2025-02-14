@@ -1,3 +1,4 @@
+/*CSS CODE*/
 body {
   font-family: Arial, sans-serif;
   background: linear-gradient(to bottom, #74ebd5, #9face6);
@@ -67,13 +68,27 @@ input, select {
   background: #2575fc;
 }
 
+.btn-clear {
+  background-color: #ff4d4d; /* Red color for reset button */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.btn-clear:hover {
+  background-color: #cc0000;
+}
+
 .btn-submit {
-  background: #4caf50;
+  background: #51d155;
   color: white;
 }
 
 .btn-submit:hover {
-  background: #45a049;
+  background: #0c8312;
 }
 
 .buttons-container {
