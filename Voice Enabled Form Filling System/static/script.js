@@ -1,3 +1,4 @@
+// JavaScript code for Voice Enabled Form Filling System
 const nameInput = document.getElementById("name");
 const emailInput = document.getElementById("email");
 const phoneInput = document.getElementById("phone");
@@ -41,21 +42,34 @@ function cleanVoiceInput(text) {
   return text.replace(/\.$/, ""); 
 }
 
-// Start/stop voice recognition 
 recordBtn.addEventListener("click", () => {
   if (isListening) {
     recognition.stop();
+    synth.cancel(); // Stop any ongoing speech output
     recordBtn.textContent = "🎤 Start Voice Input";
     isListening = false;
   } else {
     isListening = true;
     recognition.start();
     recordBtn.textContent = "⏹ Stop Voice Input";
-    step = 0;
+
+    // Find the next unfilled field
+    step = findNextUnfilledField();
+    
     isFormCompleted = false;
     speakAndHighlightNextField();
   }
 });
+
+// Function to find the next empty field
+function findNextUnfilledField() {
+  if (!nameInput.value.trim()) return 0;
+  if (!emailInput.value.trim()) return 1;
+  if (!countryCodeSelect.value.trim()) return 2;
+  if (!phoneInput.value.trim()) return 3;
+  return 4; // All fields filled
+}
+
 
 // Speech recognition result handling 
 recognition.onresult = (event) => {
@@ -72,8 +86,8 @@ recognition.onresult = (event) => {
       }
       break;
     case 1:
-      emailInput.value = transcript;
-      if (validateField("email", transcript)) {
+      emailInput.value = transcript.toLowerCase();
+      if (validateField("email", transcript.toLowerCase())) {
         speak(`You have entered ${transcript} as your email.`);
         step++;
         setTimeout(speakAndHighlightNextField, 3000);
@@ -124,6 +138,7 @@ function validateField(field, value) {
   if (field === "name") {
     if (!/^[A-Za-z ]+$/.test(value.trim())) {
       nameError.style.display = "block";
+      nameError.textContent = "❌ Name should contain only letters.";
       nameValid.style.display = "none";
       speak("Error! Name should only contain letters. Please enter your name again.");
       return false;
@@ -139,6 +154,7 @@ function validateField(field, value) {
 
     if (!emailRegex.test(value.trim())) {
       emailError.style.display = "block";
+      emailError.textContent = "❌ Please enter a valid email address with @ symbol and ending with .com ";
       emailValid.style.display = "none";
       speak("Please enter a valid email address with @ symbol and ending with dot com.");
       return false;
@@ -152,6 +168,7 @@ function validateField(field, value) {
   if (field === "phone") {
     if (!/^[789]\d{9}$/.test(value.trim())) {
       phoneError.style.display = "block";
+      phoneError.textContent = "❌ Please Enter a Phone number starts with 7, 8, or 9 and be exactly 10 digits. ";
       phoneValid.style.display = "none";
       speak("Please Enter a Phone number starts with 7, 8, or 9 and be exactly 10 digits.");
       return false;
@@ -232,7 +249,7 @@ function clearForm() {
   step = 0;
   isFormCompleted = false;
 
-  speak("Form cleared. You can start fresh.");
+  speak("Form cleared.");
 }
 
 // ** Attach Clear Form Function to the Button **
@@ -264,11 +281,6 @@ function checkFormCompletion() {
   }
 }
 
-//  Ensure form completion check runs on manual typing ...........
-/*nameInput.addEventListener("input", checkFormCompletion);
-emailInput.addEventListener("input", checkFormCompletion);
-phoneInput.addEventListener("input", checkFormCompletion);*/
-
 //  Form Downloading
 downloadBtn.addEventListener("click", () => {
   checkFormCompletion(); // Ensure latest form completion check
@@ -296,3 +308,14 @@ downloadBtn.addEventListener("click", () => {
 
   speak("Form data has been successfully downloaded.");
 });
+
+// Stop speech synthesis when the page is refreshed
+window.addEventListener("beforeunload", () => {
+  synth.cancel(); // Stop speech immediately
+});
+
+// Stop speech synthesis when the Clear button is clicked
+clearFormBtn.addEventListener("click", () => {
+  synth.cancel(); // Stop any ongoing speech
+});
+
