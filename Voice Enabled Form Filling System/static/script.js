@@ -4,7 +4,7 @@ const phoneInput = document.getElementById("phone");
 const countryCodeSelect = document.getElementById("countryCode");
 const recordBtn = document.getElementById("recordBtn");
 const submitBtn = document.getElementById("submitBtn");
-const toggleBtn = document.getElementById("toggleBtn");
+const clearFormBtn = document.getElementById("clearFormBtn");
 const helpBtn = document.getElementById("helpBtn");
 const saveBtn = document.getElementById("saveBtn");
 const downloadBtn = document.getElementById("downloadBtn");
@@ -23,13 +23,12 @@ let isFormCompleted = false;
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 recognition.lang = "en-US";
 recognition.interimResults = false;
-recognition.continuous = true; // Keeps recognition active
+recognition.continuous = true;
 recognition.maxAlternatives = 1;
 
 const synth = window.speechSynthesis;
 
-// Function to speak with delay
-function speak(text, delay = 2000) {
+function speak(text, delay = 1000) {
   setTimeout(() => {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.8;
@@ -37,12 +36,12 @@ function speak(text, delay = 2000) {
   }, delay);
 }
 
-// Function to remove full stops from voice input
+// Removes period at the end
 function cleanVoiceInput(text) {
-  return text.replace(/\.$/, ""); // Removes period at the end
+  return text.replace(/\.$/, ""); 
 }
 
-// Start/stop voice recognition
+// Start/stop voice recognition 
 recordBtn.addEventListener("click", () => {
   if (isListening) {
     recognition.stop();
@@ -58,7 +57,7 @@ recordBtn.addEventListener("click", () => {
   }
 });
 
-// Speech recognition result handling
+// Speech recognition result handling 
 recognition.onresult = (event) => {
   let transcript = event.results[event.results.length - 1][0].transcript.trim();
   transcript = cleanVoiceInput(transcript); // Remove full stop
@@ -69,7 +68,7 @@ recognition.onresult = (event) => {
       if (validateField("name", transcript)) {
         speak(`You have entered ${transcript} as your name.`);
         step++;
-        setTimeout(speakAndHighlightNextField, 4000);
+        setTimeout(speakAndHighlightNextField, 3000);
       }
       break;
     case 1:
@@ -77,7 +76,7 @@ recognition.onresult = (event) => {
       if (validateField("email", transcript)) {
         speak(`You have entered ${transcript} as your email.`);
         step++;
-        setTimeout(speakAndHighlightNextField, 4000);
+        setTimeout(speakAndHighlightNextField, 3000);
       }
       break;
     case 2:
@@ -86,13 +85,13 @@ recognition.onresult = (event) => {
         countryCodeSelect.value = countryCode;
         speak(`You have selected ${transcript} as your country.`);
         step++;
-        setTimeout(speakAndHighlightNextField, 4000);
+        setTimeout(speakAndHighlightNextField, 3000);
       } else {
         speak("Sorry, country not recognized. Please try again.");
       }
       break;
     case 3:
-      phoneInput.value = transcript.replace(/\D/g, ""); // Remove non-numeric characters
+      phoneInput.value = transcript.replace(/\D/g, "");
       if (validateField("phone", phoneInput.value)) {
         speak(`You have entered ${phoneInput.value} as your phone number.`);
         step++;
@@ -111,7 +110,7 @@ recognition.onerror = (event) => {
   speak("I didn't catch that. Please try again.");
 };
 
-// Speak next field prompt & prevent repetition
+// Speak next field prompt 
 function speakAndHighlightNextField() {
   const fields = ["name", "email", "countryCode", "phone"];
   if (step < fields.length) {
@@ -120,47 +119,51 @@ function speakAndHighlightNextField() {
   }
 }
 
-// Validate user input
+//  Validate user input 
 function validateField(field, value) {
   if (field === "name") {
-    if (!/^[A-Za-z ]+$/.test(value)) {
+    if (!/^[A-Za-z ]+$/.test(value.trim())) {
       nameError.style.display = "block";
       nameValid.style.display = "none";
-      speak("Name should only contain letters Please Enter your name again");
+      speak("Error! Name should only contain letters. Please enter your name again.");
       return false;
     }
     nameError.style.display = "none";
     nameValid.style.display = "block";
+    nameValid.textContent = "✔ Name entered correctly.";
     return true;
   }
 
   if (field === "email") {
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(value)) {
+    const emailRegex = /^[a-z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.com$/;
+
+    if (!emailRegex.test(value.trim())) {
       emailError.style.display = "block";
       emailValid.style.display = "none";
-      speak("Please enter a valid email address Please make sure @ symbol is available");
+      speak("Please enter a valid email address with @ symbol and ending with dot com.");
       return false;
     }
     emailError.style.display = "none";
     emailValid.style.display = "block";
+    emailValid.textContent = "✔ Email entered correctly.";
     return true;
   }
 
   if (field === "phone") {
-    if (!/^[789]\d{9}$/.test(value)) {
+    if (!/^[789]\d{9}$/.test(value.trim())) {
       phoneError.style.display = "block";
       phoneValid.style.display = "none";
-      speak("Phone number must start with 7, 8, or 9 and be exactly 10 digits Please Enter your phone number again");
+      speak("Please Enter a Phone number starts with 7, 8, or 9 and be exactly 10 digits.");
       return false;
     }
     phoneError.style.display = "none";
     phoneValid.style.display = "block";
+    phoneValid.textContent = "✔ Phone number entered correctly.";
     return true;
   }
 }
 
-// Convert spoken country name to country code
+// Country Code Mapping
 function getCountryCodeFromSpeech(transcript) {
   const countryCodeMapping = {
     "united states": "+1",
@@ -175,23 +178,26 @@ function getCountryCodeFromSpeech(transcript) {
   return countryCodeMapping[transcript.toLowerCase()] || null;
 }
 
-//............................//
 nameInput.addEventListener("blur", () => validateField("name", nameInput.value));
 emailInput.addEventListener("blur", () => validateField("email", emailInput.value));
 phoneInput.addEventListener("blur", () => validateField("phone", phoneInput.value));
 
-// Submit form
+//  Submit form only when all fields are valid 
 submitBtn.addEventListener("click", async () => {
-  if (!isFormCompleted) {
-    speak("Please complete all fields before submitting.");
+  if (
+    !validateField("name", nameInput.value) ||
+    !validateField("email", emailInput.value) ||
+    !validateField("phone", phoneInput.value)
+  ) {
+    speak("Please ensure all fields are filled correctly before submitting.");
     return;
   }
 
   const formData = {
-    name: nameInput.value,
-    email: emailInput.value,
-    countryCode: countryCodeSelect.value,
-    phone: phoneInput.value,
+    name: nameInput.value.trim(),
+    email: emailInput.value.trim(),
+    countryCode: countryCodeSelect.value.trim(),
+    phone: phoneInput.value.trim(),
   };
 
   const response = await fetch("/submit", {
@@ -203,16 +209,41 @@ submitBtn.addEventListener("click", async () => {
   const result = await response.json();
   alert(result.message);
 
-  document.getElementById("form").reset();
-  step = 0;
-  isFormCompleted = false;
   speak("Form submitted successfully! Next user can start now.");
+  clearForm(); // Reset form after submission
 });
 
-// Help button
+// Clear Form Function
+function clearForm() {
+  nameInput.value = "";
+  emailInput.value = "";
+  phoneInput.value = "";
+  countryCodeSelect.value = "+91"; // Default to India
+
+  // Hide validation messages
+  nameError.style.display = "none";
+  nameValid.style.display = "none";
+  emailError.style.display = "none";
+  emailValid.style.display = "none";
+  phoneError.style.display = "none";
+  phoneValid.style.display = "none";
+
+  // Reset form tracking variables
+  step = 0;
+  isFormCompleted = false;
+
+  speak("Form cleared. You can start fresh.");
+}
+
+// ** Attach Clear Form Function to the Button **
+clearFormBtn.addEventListener("click", clearForm);
+
+//  Help Button Functionality
 helpBtn.addEventListener("click", () => {
-  speak("Say 'start' to begin filling the form.");
-  speak("I will guide you through each field.");
+  speak("Welcome to the voice-enabled form.");
+  speak("Click 'Start Voice Input' to fill the form using your voice.");
+  speak("You can also type manually, and I will validate your input.");
+  speak("Click 'Submit' when you're done.");
 });
 
 // Save progress
@@ -220,27 +251,48 @@ saveBtn.addEventListener("click", () => {
   speak("Saving your progress.");
 });
 
-// Download form data
-downloadBtn.addEventListener("click", async () => {
-  const formData = JSON.stringify({
+// ** Update isFormCompleted when all fields are filled & valid **
+function checkFormCompletion() {
+  if (
+    validateField("name", nameInput.value) &&
+    validateField("email", emailInput.value) &&
+    validateField("phone", phoneInput.value)
+  ) {
+    isFormCompleted = true;
+  } else {
+    isFormCompleted = false;
+  }
+}
+
+//  Ensure form completion check runs on manual typing ...........
+/*nameInput.addEventListener("input", checkFormCompletion);
+emailInput.addEventListener("input", checkFormCompletion);
+phoneInput.addEventListener("input", checkFormCompletion);*/
+
+//  Form Downloading
+downloadBtn.addEventListener("click", () => {
+  checkFormCompletion(); // Ensure latest form completion check
+
+  if (!isFormCompleted) {
+    speak("Form is incomplete to download.");
+    return; // Stop execution if form is incomplete
+  }
+
+  const formData = {
     name: nameInput.value,
     email: emailInput.value,
     countryCode: countryCodeSelect.value,
     phone: phoneInput.value,
-  });
+  };
 
-  const blob = new Blob([formData], { type: "text/plain" });
-  const url = window.URL.createObjectURL(blob);
+  const blob = new Blob([JSON.stringify(formData, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "form_data.txt";
+  a.download = "form_data.json";
   document.body.appendChild(a);
   a.click();
-  a.remove();
-});
+  document.body.removeChild(a);
 
-// Toggle voice input
-toggleBtn.addEventListener("click", () => {
-  isListening ? recognition.stop() : recognition.start();
-  isListening = !isListening;
+  speak("Form data has been successfully downloaded.");
 });
